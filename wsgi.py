@@ -4,7 +4,8 @@ from flask import Flask, request, flash, redirect, send_file
 import json
 import os
 import mywellnessfit
-app=Flask(__name__)
+
+application = Flask(__name__)
 
 ALLOWED_EXTENSIONS = {'json'}
 
@@ -12,7 +13,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/uploadjson', methods=['POST','GET'])
+@application.route('/uploadjson', methods=['POST','GET'])
 def uploadJson():
     if request.method == 'POST':
         if 'file' not in request.files:
@@ -41,7 +42,7 @@ def uploadJson():
 
             # return send_file(filePath, as_attachment=True)
 
-@app.route("/")
+@application.route("/")
 def index():
     return '''
     <!doctype html>
