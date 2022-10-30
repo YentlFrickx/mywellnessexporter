@@ -24,7 +24,7 @@ def stravalogin():
     request_uri = strava_client.prepare_request_uri(
         authorization_endpoint,
         redirect_uri=request.base_url + "/stravacallback",
-        scope=["read"],
+        scope=["activity:write"],
     )
     return redirect(request_uri)
 
