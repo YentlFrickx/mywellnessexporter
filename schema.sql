@@ -8,3 +8,9 @@ CREATE TABLE user (
     strava_expires TEXT,
     strava_refresh_token TEXT
 );
+
+CREATE TABLE workouts (
+    mywellness_id     TEXT PRIMARY KEY,
+    user_id TEXT,
+    FOREIGN KEY(user_id) REFERENCES user(id)
+)

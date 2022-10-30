@@ -73,6 +73,7 @@ def index():
             "<div><p>Google Profile Picture:</p>"
             '<img src="{}" alt="Google profile pic"></img></div>'
             '<a class="button" href="/logout">Logout</a>'
+            '<a class="button" href="/upload">Upload</a>'
             '<a class="button" href="/stravalogin">Strava Login</a>'.format(
                 current_user.name, current_user.email, current_user.profile_pic
             )
@@ -159,6 +160,19 @@ def logout():
     return redirect(url_for("index"))
 
 
+@application.route("/upload")
+def upload():
+    return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Upload new File</h1>
+    <form action='/uploadjson' method=post enctype=multipart/form-data>
+      <input type=file name=file required>
+      <input type="time" name="time" required>
+      <input type=submit value=Upload>
+    </form>'''
+
+
 @application.route('/uploadjson', methods=['POST', 'GET'])
 def uploadJson():
     if request.method == 'POST':
@@ -175,31 +189,22 @@ def uploadJson():
             jsonData["data"]["time"] = request.form["time"]
             filePath = mywellnessfit.convert(jsonData)
 
-            return_data = io.BytesIO()
-            with open(filePath, 'rb') as fo:
-                return_data.write(fo.read())
-            # (after writing, cursor will be at last byte, so move it to start)
-            return_data.seek(0)
+            # return_data = io.BytesIO()
+            # with open(filePath, 'rb') as fo:
+            #     return_data.write(fo.read())
+            # # (after writing, cursor will be at last byte, so move it to start)
+            # return_data.seek(0)
+            strava.stravaUpload(open(filePath, 'rb'))
 
-            os.remove(filePath)
+            # os.remove(filePath)
 
-            return send_file(return_data, mimetype='application/vnd.ant.fit',
-                             download_name='converted.fit')
-
+            # return send_file(return_data, mimetype='application/vnd.ant.fit',
+            #                  download_name='converted.fit')
+            return 'success!'
             # return send_file(filePath, as_attachment=True)
 
 
 if __name__ == "__main__":
     application.run(ssl_context="adhoc")
 
-# @application.route("/")
-# def index():
-#     return '''
-#     <!doctype html>
-#     <title>Upload new File</title>
-#     <h1>Upload new File</h1>
-#     <form action='/uploadjson' method=post enctype=multipart/form-data>
-#       <input type=file name=file required>
-#       <input type="time" name="time" required>
-#       <input type=submit value=Upload>
-#     </form>'''
+

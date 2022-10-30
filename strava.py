@@ -14,8 +14,10 @@ STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", None)
 # OAuth 2 client setup
 strava_client = WebApplicationClient(STRAVA_CLIENT_ID)
 
-@login_required
 def stravalogin():
+    if not current_user.is_authenticated:
+        return redirect(url_for('/login'))
+
     # Find out what URL to hit for Google login
     authorization_endpoint = "https://www.strava.com/oauth/authorize"
 
@@ -27,6 +29,29 @@ def stravalogin():
         scope=["activity:write"],
     )
     return redirect(request_uri)
+
+
+def stravaUpload(file):
+
+    upload_endpoint = "https://www.strava.com/api/v3/uploads"
+    uri, headers, body = strava_client.add_token(upload_endpoint,)
+    response = requests.post(uri, headers=headers, data=body, files={'file': ('activity.fit', file, 'application/vnd.ant.fit', {'Expires': '0'})})
+
+    return 'success!'
+    # User.addStravaCreds(current_user.id, token_response.json().)
+    # user = User(
+    #     id_=unique_id, name=users_name, email=users_email, profile_pic=picture
+    # )
+    #
+    # current_user.id
+    #
+    #
+    # # Doesn't exist? Add it to the database.
+    # if not User.get(unique_id):
+    #     User.create(unique_id, users_name, users_email, picture)
+    #
+    # # Begin user session by logging the user in
+    # login_user(user)
 
 
 def stravacallback():
@@ -58,30 +83,6 @@ def stravacallback():
     access_token = token_response.json()["access_token"]
     strava_id = token_response.json()["athlete"]["id"]
     User.addStravaCreds(current_user.id, strava_id, access_token, expires, refresh_token)
-
-    # userinfo_endpoint = "https://www.strava.com/api/v3/athlete"
-    # uri, headers, body = strava_client.add_token(userinfo_endpoint)
-    # userinfo_response = requests.get(uri, headers=headers, data=body)
-    # if userinfo_response.json().get("username"):
-    #     unique_id = userinfo_response.json()["id"]
-    #     users_name = userinfo_response.json()["username"]
-    # else:
-    #     return "User email not available or not verified by Strava.", 400
-
-    # User.addStravaCreds(current_user.id, token_response.json().)
-    # user = User(
-    #     id_=unique_id, name=users_name, email=users_email, profile_pic=picture
-    # )
-    #
-    # current_user.id
-    #
-    #
-    # # Doesn't exist? Add it to the database.
-    # if not User.get(unique_id):
-    #     User.create(unique_id, users_name, users_email, picture)
-    #
-    # # Begin user session by logging the user in
-    # login_user(user)
 
     # Send user back to homepage
     return redirect(url_for("index"))
