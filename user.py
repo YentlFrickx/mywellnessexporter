@@ -2,6 +2,7 @@ from flask_login import UserMixin
 
 from db import get_db
 
+
 class User(UserMixin):
     def __init__(self, id_, name, email, profile_pic):
         self.id = id_
@@ -30,5 +31,15 @@ class User(UserMixin):
             "INSERT INTO user (id, name, email, profile_pic) "
             "VALUES (?, ?, ?, ?)",
             (id_, name, email, profile_pic),
+        )
+        db.commit()
+
+    @staticmethod
+    def addStravaCreds(user_id, strava_id, strava_access_token, strava_expires, strava_refresh_token):
+        db = get_db()
+        db.execute(
+            "UPDATE user set strava_id=?, strava_access_token=?, strava_expires=?, strava_refresh_token=? "
+            "WHERE (id = ?)",
+            (strava_id, strava_access_token, strava_expires, strava_refresh_token, user_id)
         )
         db.commit()

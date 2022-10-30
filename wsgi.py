@@ -20,6 +20,7 @@ import sqlite3
 from db import init_db_command
 from user import User
 import mywellnessfit
+import strava
 
 # Configuration
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
@@ -30,6 +31,9 @@ GOOGLE_DISCOVERY_URL = (
 
 application = Flask(__name__)
 application.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
+
+application.add_url_rule('/stravalogin', view_func=strava.stravalogin)
+application.add_url_rule('/stravalogin/stravacallback', view_func=strava.stravacallback)
 
 ALLOWED_EXTENSIONS = {'json'}
 
@@ -54,10 +58,12 @@ except sqlite3.OperationalError:
 # OAuth 2 client setup
 client = WebApplicationClient(GOOGLE_CLIENT_ID)
 
+
 # Flask-Login helper to retrieve a user from our db
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
+
 
 @application.route("/")
 def index():
@@ -66,7 +72,8 @@ def index():
             "<p>Hello, {}! You're logged in! Email: {}</p>"
             "<div><p>Google Profile Picture:</p>"
             '<img src="{}" alt="Google profile pic"></img></div>'
-            '<a class="button" href="/logout">Logout</a>'.format(
+            '<a class="button" href="/logout">Logout</a>'
+            '<a class="button" href="/stravalogin">Strava Login</a>'.format(
                 current_user.name, current_user.email, current_user.profile_pic
             )
         )
@@ -151,6 +158,7 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
+
 @application.route('/uploadjson', methods=['POST', 'GET'])
 def uploadJson():
     if request.method == 'POST':
@@ -179,6 +187,7 @@ def uploadJson():
                              download_name='converted.fit')
 
             # return send_file(filePath, as_attachment=True)
+
 
 if __name__ == "__main__":
     application.run(ssl_context="adhoc")
