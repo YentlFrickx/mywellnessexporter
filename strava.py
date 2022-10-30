@@ -31,27 +31,36 @@ def stravalogin():
     return redirect(request_uri)
 
 
+def refreshToken():
+    token_url, headers, body = strava_client.prepare_refresh_token_request(
+        token_url="https://www.strava.com/oauth/token",
+        refresh_token=current_user.strava_refresh_token,
+        scope=["activity:write"],
+        client_id=STRAVA_CLIENT_ID,
+        client_secret=STRAVA_CLIENT_SECRET
+    )
+    token_response = requests.post(
+        token_url,
+        headers=headers,
+        data=body,
+        auth=(STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET),
+    )
+
+    strava_client.parse_request_body_response(json.dumps(token_response.json()))
+
+    refresh_token = token_response.json()["refresh_token"]
+    expires = token_response.json()["expires_at"]
+    access_token = token_response.json()["access_token"]
+    User.updateStravaTokens(current_user.id, access_token, expires, refresh_token)
+
 def stravaUpload(file):
 
     upload_endpoint = "https://www.strava.com/api/v3/uploads"
     uri, headers, body = strava_client.add_token(upload_endpoint,)
     response = requests.post(uri, headers=headers, data=body, files={'file': ('activity.fit', file, 'application/vnd.ant.fit', {'Expires': '0'})})
 
-    return 'success!'
-    # User.addStravaCreds(current_user.id, token_response.json().)
-    # user = User(
-    #     id_=unique_id, name=users_name, email=users_email, profile_pic=picture
-    # )
-    #
-    # current_user.id
-    #
-    #
-    # # Doesn't exist? Add it to the database.
-    # if not User.get(unique_id):
-    #     User.create(unique_id, users_name, users_email, picture)
-    #
-    # # Begin user session by logging the user in
-    # login_user(user)
+    if response.status_code == 201:
+        return 'success!'
 
 
 def stravacallback():

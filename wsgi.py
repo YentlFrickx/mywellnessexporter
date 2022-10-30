@@ -1,6 +1,6 @@
 import io
 
-from flask import Flask, request, flash, redirect, send_file, url_for
+from flask import Flask, request, flash, redirect, send_file, url_for, render_template
 from flask_login import (
     LoginManager,
     current_user,
@@ -68,16 +68,12 @@ def load_user(user_id):
 @application.route("/")
 def index():
     if current_user.is_authenticated:
-        return (
-            "<p>Hello, {}! You're logged in! Email: {}</p>"
-            "<div><p>Google Profile Picture:</p>"
-            '<img src="{}" alt="Google profile pic"></img></div>'
-            '<a class="button" href="/logout">Logout</a>'
-            '<a class="button" href="/upload">Upload</a>'
-            '<a class="button" href="/stravalogin">Strava Login</a>'.format(
-                current_user.name, current_user.email, current_user.profile_pic
-            )
-        )
+        if current_user.strava_id:
+            show_strava = False
+        else:
+            show_strava = True
+
+        return render_template('home.html', show_strava=show_strava)
     else:
         return '<a class="button" href="/login">Google Login</a>'
 
@@ -138,13 +134,14 @@ def callback():
     else:
         return "User email not available or not verified by Google.", 400
 
-    user = User(
-        id_=unique_id, name=users_name, email=users_email, profile_pic=picture
-    )
-
     # Doesn't exist? Add it to the database.
     if not User.get(unique_id):
         User.create(unique_id, users_name, users_email, picture)
+        user = User(
+            id_=unique_id, name=users_name, email=users_email, profile_pic=picture
+        )
+    else:
+        user = User.get(unique_id)
 
     # Begin user session by logging the user in
     login_user(user)
