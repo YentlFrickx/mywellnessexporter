@@ -12,6 +12,7 @@ import sqlite3
 
 # Internal imports
 from blueprints.google import google
+from blueprints.mywellness import mywellness
 from db import init_db_command
 from models.user import User
 from blueprints.strava import strava
@@ -22,6 +23,7 @@ application.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
 application.register_blueprint(google)
 application.register_blueprint(strava)
+application.register_blueprint(mywellness)
 
 
 login_manager = LoginManager()

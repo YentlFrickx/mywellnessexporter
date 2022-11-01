@@ -4,7 +4,16 @@ from db import get_db
 
 
 class User(UserMixin):
-    def __init__(self, id_, name, email, profile_pic, strava_id, strava_access_token, strava_expires, strava_refresh_token):
+    def __init__(self,
+                 id_,
+                 name,
+                 email,
+                 profile_pic,
+                 strava_id = '',
+                 strava_access_token = '',
+                 strava_expires = '',
+                 strava_refresh_token = '',
+                 mywellness_cookie = ''):
         self.id = id_
         self.name = name
         self.email = email
@@ -13,6 +22,7 @@ class User(UserMixin):
         self.strava_access_token = strava_access_token
         self.strava_expires = strava_expires
         self.strava_refresh_token = strava_refresh_token
+        self.mywellness_cookie = mywellness_cookie
 
     @staticmethod
     def get(user_id):
@@ -31,7 +41,8 @@ class User(UserMixin):
             strava_id=user[4],
             strava_access_token=user[5],
             strava_expires=user[6],
-            strava_refresh_token=user[7]
+            strava_refresh_token=user[7],
+            mywellness_cookie=user[8]
         )
         return user
 
@@ -64,3 +75,24 @@ class User(UserMixin):
             (strava_access_token, strava_expires, strava_refresh_token, user_id)
         )
         db.commit()
+
+    @staticmethod
+    def add_mywellness_cookie(user_id, cookie):
+        db = get_db()
+        db.execute(
+            "UPDATE user set mywellness_cookie=? "
+            "WHERE (id = ?)",
+            (cookie, user_id)
+        )
+        db.commit()
+
+    @staticmethod
+    def get_cookie(user_id):
+        db = get_db()
+        user = db.execute(
+            "SELECT * FROM user WHERE id = ?", (user_id,)
+        ).fetchone()
+        if not user:
+            return None
+
+        return user[8]

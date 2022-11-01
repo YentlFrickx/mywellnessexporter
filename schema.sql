@@ -6,7 +6,8 @@ CREATE TABLE user (
     strava_id TEXT,
     strava_access_token TEXT,
     strava_expires TEXT,
-    strava_refresh_token TEXT
+    strava_refresh_token TEXT,
+    mywellness_cookie TEXT
 );
 
 CREATE TABLE workouts (
