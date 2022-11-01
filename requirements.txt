@@ -6,3 +6,4 @@ pyOpenSSL==22.1.0
 Flask-Login==0.6.2
 Flask-WTF==1.0.1
 Flask-Bootstrap4==4.0.2
+beautifulsoup4==4.11.1
