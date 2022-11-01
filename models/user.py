@@ -46,7 +46,7 @@ class User(UserMixin):
         db.commit()
 
     @staticmethod
-    def addStravaCreds(user_id, strava_id, strava_access_token, strava_expires, strava_refresh_token):
+    def add_strava_creds(user_id, strava_id, strava_access_token, strava_expires, strava_refresh_token):
         db = get_db()
         db.execute(
             "UPDATE user set strava_id=?, strava_access_token=?, strava_expires=?, strava_refresh_token=? "
@@ -55,7 +55,8 @@ class User(UserMixin):
         )
         db.commit()
 
-    def updateStravaTokens(user_id, strava_access_token, strava_expires, strava_refresh_token):
+    @staticmethod
+    def update_strava_tokens(user_id, strava_access_token, strava_expires, strava_refresh_token):
         db = get_db()
         db.execute(
             "UPDATE user set strava_access_token=?, strava_expires=?, strava_refresh_token=? "

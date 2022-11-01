@@ -11,14 +11,15 @@ from fit_tool.profile.messages.lap_message import LapMessage
 from fit_tool.profile.messages.record_message import RecordMessage
 from fit_tool.profile.profile_type import FileType, Manufacturer, Sport, Event, EventType
 
-prevDistance = 0
+prev_distance = 0
 altitude = 0
 totalAscent = 0
 totalDescent = 0
 
-def createMessage(sport, sample, timeDiff):
+
+def create_message(sport, sample, time_diff):
     global altitude
-    global prevDistance
+    global prev_distance
     global totalAscent
     global totalDescent
     message = RecordMessage()
@@ -40,15 +41,15 @@ def createMessage(sport, sample, timeDiff):
         grade = sample["vs"][1]
         distance = sample["vs"][2]
 
-    distance += speed * timeDiff
-    elevationGain = (distance - prevDistance) * (grade / 100)
-    prevDistance = distance
-    altitude += elevationGain
+    distance += speed * time_diff
+    elevation_gain = (distance - prev_distance) * (grade / 100)
+    prev_distance = distance
+    altitude += elevation_gain
 
-    if elevationGain > 0:
-        totalAscent += elevationGain
-    elif elevationGain < 0:
-        totalDescent += elevationGain
+    if elevation_gain > 0:
+        totalAscent += elevation_gain
+    elif elevation_gain < 0:
+        totalDescent += elevation_gain
 
     message.distance = distance
     message.speed = speed
@@ -67,19 +68,20 @@ def convert(jsonData):
         return "Unsupported equipment"
     builder = FitFileBuilder(auto_define=True, min_string_size=50)
 
-    dateArray = data["date"].split('/')
-    timeArray = data["time"].split(':')
-    startDT = datetime(int(dateArray[2]), int(dateArray[0]), int(dateArray[1]), int(timeArray[0]), int(timeArray[1]))
+    date_array = data["date"].split('/')
+    hour = data["hour"]
+    minute = data["minute"]
+    start_dt = datetime(int(date_array[2]), int(date_array[0]), int(date_array[1]), hour, minute)
 
     message = FileIdMessage()
     message.type = FileType.ACTIVITY
     message.manufacturer = Manufacturer.TECHNOGYM.value
     message.product = 0
-    message.timeCreated = round(startDT.timestamp() * 1000)
+    message.timeCreated = round(start_dt.timestamp() * 1000)
     message.serialNumber = 0x12345678
     builder.add(message)
 
-    start_timestamp = round(startDT.timestamp() * 1000)
+    start_timestamp = round(start_dt.timestamp() * 1000)
     message = EventMessage()
     message.event = Event.TIMER
     message.event_type = EventType.START
@@ -88,78 +90,75 @@ def convert(jsonData):
 
     records = []  # track points
 
-    endDT = startDT
+    end_dt = start_dt
 
+    sample_index = 0
+    hr_index = 0
 
-    sampleIndex = 0
-    hrIndex = 0
+    sample_array = data["analitics"]["samples"]
+    hr_array = data["analitics"]["hr"]
 
-    sampleArray = data["analitics"]["samples"]
-    hrArray = data["analitics"]["hr"]
+    while not ((sample_index >= len(sample_array) - 1) and (hr_index >= len(hr_array) - 1)):
+        if sample_index == len(sample_array):
+            sample_index -= 1
+        if hr_index == len(hr_array):
+            hr_index -= 1
 
-    # while sampleIndex < len(sampleArray) or hrIndex < len(hrArray):
-    while not((sampleIndex >= len(sampleArray)-1) and (hrIndex >= len(hrArray)-1)):
-        if sampleIndex == len(sampleArray):
-            sampleIndex -= 1
-        if hrIndex == len(hrArray):
-            hrIndex -= 1
-
-        sample = sampleArray[sampleIndex]
-        sampleTime = sample["t"]
-        hr = hrArray[hrIndex]
+        sample = sample_array[sample_index]
+        sample_time = sample["t"]
+        hr = hr_array[hr_index]
         hrTime = hr["t"]
 
-        if sampleTime == hrTime or sampleTime < hrTime:
-            currentDT = startDT + timedelta(seconds=sample["t"])
-            message = createMessage(sport, sample, 0)
+        if sample_time == hrTime or sample_time < hrTime:
+            current_dt = start_dt + timedelta(seconds=sample["t"])
+            message = create_message(sport, sample, 0)
             message.heart_rate = hr["hr"]
 
-            sampleIndex += 1
-            if sampleTime == hrTime:
-                hrIndex += 1
+            sample_index += 1
+            if sample_time == hrTime:
+                hr_index += 1
         else:
-            currentDT = startDT + timedelta(seconds=hr["t"])
-            if sampleIndex > 0:
-                sample = sampleArray[sampleIndex-1]
-            message = createMessage(sport, sample, hrTime - sample["t"])
+            current_dt = start_dt + timedelta(seconds=hr["t"])
+            if sample_index > 0:
+                sample = sample_array[sample_index - 1]
+            message = create_message(sport, sample, hrTime - sample["t"])
             message.heart_rate = hr["hr"]
-            hrIndex += 1
+            hr_index += 1
 
-        message.timestamp = currentDT.timestamp() * 1000
-        endDT = currentDT
+        message.timestamp = current_dt.timestamp() * 1000
+        end_dt = current_dt
         records.append(message)
-
 
     builder.add_all(records)
     # stop event
     message = EventMessage()
     message.event = Event.TIMER
     message.eventType = EventType.STOP_ALL
-    message.timestamp = endDT.timestamp() * 1000
+    message.timestamp = end_dt.timestamp() * 1000
     builder.add(message)
 
-    generalData = data["data"]
+    general_data = data["data"]
 
     # Every FIT course file MUST contain a Lap message
-    elapsed_time = endDT.timestamp() * 1000 - start_timestamp
+    elapsed_time = end_dt.timestamp() * 1000 - start_timestamp
 
     message = SessionMessage()
-    message.timestamp = endDT.timestamp() * 1000
+    message.timestamp = end_dt.timestamp() * 1000
     message.start_time = start_timestamp
     message.total_elapsed_time = elapsed_time / 1000
     message.total_timer_time = elapsed_time / 1000
-    message.total_distance = generalData[1]["rawValue"] * 1000
+    message.total_distance = general_data[1]["rawValue"] * 1000
     message.total_ascent = totalAscent
     message.total_descent = totalDescent
     message.sport = sport
     builder.add(message)
 
     message = LapMessage()
-    message.timestamp = endDT.timestamp() * 1000
+    message.timestamp = end_dt.timestamp() * 1000
     message.start_time = start_timestamp
     message.total_elapsed_time = elapsed_time / 1000
     message.total_timer_time = elapsed_time / 1000
-    message.total_distance = generalData[1]["rawValue"] * 1000
+    message.total_distance = general_data[1]["rawValue"] * 1000
     message.total_ascent = totalAscent
     message.total_descent = totalDescent
     builder.add(message)
