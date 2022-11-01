@@ -44,7 +44,7 @@ def refreshToken():
     User.update_strava_tokens(current_user.id, access_token, expires, refresh_token)
 
 
-def stravaUpload(filePath):
+def stravaUpload(fileString):
     refreshToken()
     upload_endpoint = "https://www.strava.com/api/v3/uploads"
     body = { 'trainer': 'true', 'data_type': 'fit'}
@@ -54,7 +54,7 @@ def stravaUpload(filePath):
                              headers=headers,
                              data=body,
                              files={'file': ('activity.fit',
-                                             open(filePath, 'rb'),
+                                             fileString,
                                              'application/vnd.ant.fit',
                                              {'Expires': '0'})
                                     }
@@ -85,8 +85,12 @@ def upload():
             jsonData["data"]["minute"] = form.time.data.minute
             filePath = mywellnessfit.convert(jsonData)
 
-            stravaUpload(filePath)
+            with open(filePath, 'rb') as file:
+                data = file.read()
+
             os.remove(filePath)
+            stravaUpload(data)
+
         return redirect("/")
     return render_template('upload.html', form=form)
 

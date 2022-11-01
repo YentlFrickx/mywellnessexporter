@@ -1,3 +1,5 @@
+import json
+import os
 import re
 
 import requests
@@ -7,6 +9,8 @@ import pickle
 from flask_login import login_required, current_user
 from bs4 import BeautifulSoup
 
+import mywellnessfit
+from blueprints.strava import stravaUpload
 from models.form import MyWellnessLoginForm
 from models.user import User
 
@@ -46,18 +50,27 @@ def login():
 @mywellness.route('/connect/mywellness/sessions')
 @login_required
 def get_sessions():
+    # TODO: get userid via param
     cookie_value = User.get_cookie(current_user.id)
     if not cookie_value:
         return redirect('/connect/mywellness')
     cookie_dict = {"_mwappseu": cookie_value}
-    url = 'https://www.mywellness.com/cloud/Training/LastPerformedWorkoutSession/?fromDate=27/10/2022&toDate=27/10/2022'
+
+    # TODO: use current date
+    url = 'https://www.mywellness.com/cloud/Training/LastPerformedWorkoutSession/?fromDate=30/10/2022&toDate=30/10/2022'
     response = requests.get(url=url, cookies=cookie_dict)
     soup = BeautifulSoup(response.text, "html.parser")
     sessions = soup.findAll('div', class_='single-item')
     sessionIds = []
     for session in sessions:
         href = session.find_next('a')
-        return get_activity(href.get('href'), cookie_dict)
+        jsonData = json.loads(get_activity(href.get('href'), cookie_dict))
+        filePath = mywellnessfit.convert(jsonData)
+        with open(filePath, 'rb') as file:
+            data = file.read()
+
+        os.remove(filePath)
+        stravaUpload(data)
     return response.text
 
 

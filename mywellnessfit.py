@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 from fit_tool.fit_file_builder import FitFileBuilder
 from fit_tool.profile.messages.activity_message import ActivityMessage
@@ -68,10 +68,8 @@ def convert(jsonData):
         return "Unsupported equipment"
     builder = FitFileBuilder(auto_define=True, min_string_size=50)
 
-    date_array = data["date"].split('/')
-    hour = data["hour"]
-    minute = data["minute"]
-    start_dt = datetime(int(date_array[2]), int(date_array[0]), int(date_array[1]), hour, minute)
+    duration = round(data["data"][0]["rawValue"]*60)
+    start_dt = datetime.now() + timedelta(seconds=duration)
 
     message = FileIdMessage()
     message.type = FileType.ACTIVITY

@@ -9,11 +9,11 @@ class User(UserMixin):
                  name,
                  email,
                  profile_pic,
-                 strava_id = '',
-                 strava_access_token = '',
-                 strava_expires = '',
-                 strava_refresh_token = '',
-                 mywellness_cookie = ''):
+                 strava_id='',
+                 strava_access_token='',
+                 strava_expires='',
+                 strava_refresh_token='',
+                 mywellness_cookie=''):
         self.id = id_
         self.name = name
         self.email = email
