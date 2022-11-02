@@ -8,3 +8,4 @@ Flask-WTF==1.0.1
 Flask-Bootstrap4==4.0.2
 beautifulsoup4==4.11.1
 flask-sqlalchemy==3.0.2
+APScheduler==3.9.1

@@ -43,8 +43,10 @@ def refreshToken():
     refresh_token = token_response.json()["refresh_token"]
     expires = token_response.json()["expires_at"]
     access_token = token_response.json()["access_token"]
-    User.update_strava_tokens(current_user.id, access_token, expires, refresh_token)
-
+    current_user.strava_refresh_token = refresh_token
+    current_user.strava_access_token = access_token
+    current_user.strava_expires = expires
+    db.session.commit()
 
 def stravaUpload(fileString):
     refreshToken()

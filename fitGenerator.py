@@ -17,6 +17,12 @@ totalAscent = 0
 totalDescent = 0
 
 
+class FitActivity:
+    def __init__(self, file_path, success):
+        self.file_path = file_path
+        self.success = success
+
+
 def create_message(sport, sample, time_diff):
     global altitude
     global prev_distance
@@ -57,15 +63,15 @@ def create_message(sport, sample, time_diff):
     return message
 
 
-def convert(jsonData):
-    data = jsonData['data']
+def convert(json_data):
+    data = json_data['data']
 
     if data["equipmentType"] == "Skillbike":
         sport = Sport.CYCLING
     elif data["equipmentType"] == "Treadmill":
         sport = Sport.RUNNING
     else:
-        return "Unsupported equipment"
+        return FitActivity("Unsupported equipment", False)
     builder = FitFileBuilder(auto_define=True, min_string_size=50)
 
     duration = round(data["data"][0]["rawValue"]*60)
@@ -170,7 +176,7 @@ def convert(jsonData):
 
     filename = str(uuid.uuid4())
     fit_file.to_file(f'''${filename}.fit''')
-    return f'''${filename}.fit'''
+    return FitActivity(f'''${filename}.fit''', True)
 
 
 if __name__ == '__main__':

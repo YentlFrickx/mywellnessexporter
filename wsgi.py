@@ -13,10 +13,10 @@ from db import db
 from models.user import User
 from models.activity import Activity
 from models.error import Error
+import cron
 from blueprints.strava import strava
 
 login_manager = LoginManager()
-
 
 @login_manager.unauthorized_handler
 def unauthorized_callback():
@@ -48,4 +48,5 @@ if __name__ == "__main__":
     application = create_app()
     with application.app_context():
         db.create_all()
+    cron.schedule(application)
     application.run(ssl_context="adhoc")

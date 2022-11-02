@@ -14,6 +14,8 @@ from blueprints.strava import stravaUpload
 # from models.activity import Activity
 # from models.error import Error
 from db import db
+from models.activity import Activity
+from models.error import Error
 from models.form import MyWellnessLoginForm
 from models.user import User
 
@@ -51,14 +53,12 @@ def login():
     return render_template('wellnesslogin.html', form=form)
 
 
-@mywellness.route('/connect/mywellness/sessions')
-@login_required
-def get_sessions():
-    # TODO: get userid via param
-    user_id = current_user.id
-    cookie_value = User.get_cookie(user_id)
-    if not cookie_value:
-        return redirect('/connect/mywellness')
+def sync_sessions(user):
+    user_id = user.id
+    cookie_value = user.mywellness_cookie
+    strava_id = user.strava_id
+    if not (cookie_value and strava_id):
+        return False
     cookie_dict = {"_mwappseu": cookie_value}
 
     # TODO: use current date
@@ -70,18 +70,27 @@ def get_sessions():
     for session in sessions:
         href = session.find_next('a').get('href')
 
-        # if Activity.get(href) is None and Error.get(href) is None:
-        json_data = json.loads(get_activity(href, cookie_dict))
-        file_path = fitGenerator.convert(json_data)
-        with open(file_path, 'rb') as file:
-            data = file.read()
+        if Activity.query.filter_by(mywellness_href=href).first() is None and Error.query.filter_by(mywellness_href=href).first() is None:
+            json_data = json.loads(get_activity(href, cookie_dict))
+            fit_activity = fitGenerator.convert(json_data)
+            if fit_activity.success:
+                file_path = fit_activity.file_path
+                with open(file_path, 'rb') as file:
+                    data = file.read()
 
-        os.remove(file_path)
-        if stravaUpload(data):
-            print('success')
-            # Activity.create(href, user_id)
+                os.remove(file_path)
+                if stravaUpload(data):
+                    activity = Activity(href, user_id)
+                    db.session.add(activity)
+                    db.session.commit()
+                    continue
+        else:
+            continue
 
-    return response.text
+        error = Error(href, user_id)
+        db.session.add(error)
+        db.session.commit()
+    return True
 
 
 def get_activity(url, cookie_dict):
