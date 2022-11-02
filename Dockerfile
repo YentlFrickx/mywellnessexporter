@@ -9,4 +9,4 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-CMD waitress-serve --listen=*:8080 --call wsgi:setup_app --url-scheme=https
+CMD waitress-serve --listen=*:8080 --call --url-scheme=https wsgi:setup_app
