@@ -2,3 +2,6 @@ dbfolder
 .idea/misc.xml
 *.json
 instance/sqlite.db
+**/__pycache__
+__pycache__
+*.pyc
