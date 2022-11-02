@@ -1,4 +1,4 @@
-CREATE TABLE user (
+CREATE TABLE IF NOT EXISTS user (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
@@ -10,8 +10,14 @@ CREATE TABLE user (
     mywellness_cookie TEXT
 );
 
-CREATE TABLE workouts (
-    mywellness_id     TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS activity (
+    mywellness_href     TEXT PRIMARY KEY,
+    user_id TEXT,
+    FOREIGN KEY(user_id) REFERENCES user(id)
+)
+
+CREATE TABLE IF NOT EXISTS error (
+    mywellness_href     TEXT PRIMARY KEY,
     user_id TEXT,
     FOREIGN KEY(user_id) REFERENCES user(id)
 )

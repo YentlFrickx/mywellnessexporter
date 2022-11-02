@@ -1,3 +1,4 @@
 dbfolder
 .idea/misc.xml
 *.json
+instance/sqlite.db

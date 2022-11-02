@@ -4,9 +4,11 @@ import os
 import requests
 from flask import request, redirect, url_for, Blueprint, flash, render_template
 from flask_login import current_user, login_required
+from flask_sqlalchemy import session
 from oauthlib.oauth2 import WebApplicationClient
 
-import mywellnessfit
+import fitGenerator
+from db import db
 from models.form import UploadForm
 from models.user import User
 
@@ -61,8 +63,11 @@ def stravaUpload(fileString):
                              )
 
     if response.status_code == 201:
-        return 'success!'
-
+        return True
+    else:
+        print(f'Error while uploading to strava, userid: {current_user.id}, statuscode: {response.status_code}')
+        print(response.text)
+        return False
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -83,7 +88,7 @@ def upload():
             jsonData = json.loads(data.decode('utf-8'))
             jsonData["data"]["hour"] = form.time.data.hour
             jsonData["data"]["minute"] = form.time.data.minute
-            filePath = mywellnessfit.convert(jsonData)
+            filePath = fitGenerator.convert(jsonData)
 
             with open(filePath, 'rb') as file:
                 data = file.read()
@@ -141,7 +146,23 @@ def stravacallback():
     expires = token_response.json()["expires_at"]
     access_token = token_response.json()["access_token"]
     strava_id = token_response.json()["athlete"]["id"]
-    User.add_strava_creds(current_user.id, strava_id, access_token, expires, refresh_token)
+    current_user.strava_id = strava_id
+    current_user.strava_access_token = access_token
+    current_user.strava_expires = expires
+    current_user.strava_refresh_token = refresh_token
+    db.session.commit()
+    # User.add_strava_creds(current_user.id, strava_id, access_token, expires, refresh_token)
 
     # Send user back to homepage
-    return redirect(url_for("index"))
+    return redirect("/")
+
+
+@strava.route("/")
+@login_required
+def index():
+    if current_user.strava_id:
+        show_strava = False
+    else:
+        show_strava = True
+
+    return render_template('home.html', show_strava=show_strava)

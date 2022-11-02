@@ -9,8 +9,11 @@ import pickle
 from flask_login import login_required, current_user
 from bs4 import BeautifulSoup
 
-import mywellnessfit
+import fitGenerator
 from blueprints.strava import stravaUpload
+# from models.activity import Activity
+# from models.error import Error
+from db import db
 from models.form import MyWellnessLoginForm
 from models.user import User
 
@@ -42,7 +45,8 @@ def login():
         response = requests.post(url=LOGIN_URL, data=body)
         cookie_dict = response.cookies.get_dict()
 
-        User.add_mywellness_cookie(current_user.id, cookie_dict["_mwappseu"])
+        current_user.mywellness_cookie = cookie_dict["_mwappseu"]
+        db.session.commit()
         return redirect("/")
     return render_template('wellnesslogin.html', form=form)
 
@@ -51,7 +55,8 @@ def login():
 @login_required
 def get_sessions():
     # TODO: get userid via param
-    cookie_value = User.get_cookie(current_user.id)
+    user_id = current_user.id
+    cookie_value = User.get_cookie(user_id)
     if not cookie_value:
         return redirect('/connect/mywellness')
     cookie_dict = {"_mwappseu": cookie_value}
@@ -61,16 +66,21 @@ def get_sessions():
     response = requests.get(url=url, cookies=cookie_dict)
     soup = BeautifulSoup(response.text, "html.parser")
     sessions = soup.findAll('div', class_='single-item')
-    sessionIds = []
+
     for session in sessions:
-        href = session.find_next('a')
-        jsonData = json.loads(get_activity(href.get('href'), cookie_dict))
-        filePath = mywellnessfit.convert(jsonData)
-        with open(filePath, 'rb') as file:
+        href = session.find_next('a').get('href')
+
+        # if Activity.get(href) is None and Error.get(href) is None:
+        json_data = json.loads(get_activity(href, cookie_dict))
+        file_path = fitGenerator.convert(json_data)
+        with open(file_path, 'rb') as file:
             data = file.read()
 
-        os.remove(filePath)
-        stravaUpload(data)
+        os.remove(file_path)
+        if stravaUpload(data):
+            print('success')
+            # Activity.create(href, user_id)
+
     return response.text
 
 
