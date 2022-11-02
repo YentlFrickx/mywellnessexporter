@@ -44,9 +44,14 @@ def create_app():
     return application
 
 
-if __name__ == "__main__":
-    application = create_app()
-    with application.app_context():
+def setup_app():
+    app = create_app()
+    with app.app_context():
         db.create_all()
-    cron.schedule(application)
+    cron.schedule(app)
+    return app
+
+
+if __name__ == "__main__":
+    application = setup_app()
     application.run()
