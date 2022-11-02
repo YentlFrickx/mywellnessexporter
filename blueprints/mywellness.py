@@ -79,7 +79,7 @@ def sync_sessions(user):
                     data = file.read()
 
                 os.remove(file_path)
-                if stravaUpload(data):
+                if stravaUpload(data, user):
                     activity = Activity(href, user_id)
                     db.session.add(activity)
                     db.session.commit()

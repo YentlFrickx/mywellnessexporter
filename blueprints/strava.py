@@ -4,13 +4,11 @@ import os
 import requests
 from flask import request, redirect, url_for, Blueprint, flash, render_template
 from flask_login import current_user, login_required
-from flask_sqlalchemy import session
 from oauthlib.oauth2 import WebApplicationClient
 
 import fitGenerator
 from db import db
 from models.form import UploadForm
-from models.user import User
 
 strava = Blueprint('strava', __name__)
 
@@ -23,10 +21,10 @@ strava_client = WebApplicationClient(STRAVA_CLIENT_ID)
 ALLOWED_EXTENSIONS = {'json'}
 
 
-def refreshToken():
+def refreshToken(user):
     token_url, headers, body = strava_client.prepare_refresh_token_request(
         token_url="https://www.strava.com/oauth/token",
-        refresh_token=current_user.strava_refresh_token,
+        refresh_token=user.strava_refresh_token,
         scope=["activity:write"],
         client_id=STRAVA_CLIENT_ID,
         client_secret=STRAVA_CLIENT_SECRET
@@ -43,12 +41,12 @@ def refreshToken():
     refresh_token = token_response.json()["refresh_token"]
     expires = token_response.json()["expires_at"]
     access_token = token_response.json()["access_token"]
-    current_user.strava_refresh_token = refresh_token
-    current_user.strava_access_token = access_token
-    current_user.strava_expires = expires
+    user.strava_refresh_token = refresh_token
+    user.strava_access_token = access_token
+    user.strava_expires = expires
     db.session.commit()
 
-def stravaUpload(fileString):
+def stravaUpload(fileString, user):
     refreshToken()
     upload_endpoint = "https://www.strava.com/api/v3/uploads"
     body = { 'trainer': 'true', 'data_type': 'fit'}
@@ -67,7 +65,7 @@ def stravaUpload(fileString):
     if response.status_code == 201:
         return True
     else:
-        print(f'Error while uploading to strava, userid: {current_user.id}, statuscode: {response.status_code}')
+        print(f'Error while uploading to strava, userid: {user.id}, statuscode: {response.status_code}')
         print(response.text)
         return False
 
@@ -96,7 +94,7 @@ def upload():
                 data = file.read()
 
             os.remove(filePath)
-            stravaUpload(data)
+            stravaUpload(data, current_user)
 
         return redirect("/")
     return render_template('upload.html', form=form)
@@ -159,12 +157,3 @@ def stravacallback():
     return redirect("/")
 
 
-@strava.route("/")
-@login_required
-def index():
-    if current_user.strava_id:
-        show_strava = False
-    else:
-        show_strava = True
-
-    return render_template('home.html', show_strava=show_strava)

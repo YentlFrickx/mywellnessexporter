@@ -23,7 +23,7 @@ def schedule(app):
     scheduler = BackgroundScheduler()
 
     with application.app_context():
-        scheduler.add_job(func=sync, trigger="interval", seconds=10)
+        scheduler.add_job(func=sync, trigger="interval", minutes=5)
     scheduler.start()
 
     # Shut down the scheduler when exiting the app

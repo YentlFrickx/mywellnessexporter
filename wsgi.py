@@ -7,6 +7,7 @@ from flask_bootstrap import Bootstrap
 import os
 
 # Internal imports
+from blueprints.general import general
 from blueprints.google import google
 from blueprints.mywellness import mywellness
 from db import db
@@ -36,6 +37,7 @@ def create_app():
     application.register_blueprint(google)
     application.register_blueprint(strava)
     application.register_blueprint(mywellness)
+    application.register_blueprint(general)
 
     application.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sqlite.db'
 
@@ -54,4 +56,4 @@ def setup_app():
 
 if __name__ == "__main__":
     application = setup_app()
-    application.run()
+    application.run(ssl_context="adhoc")
