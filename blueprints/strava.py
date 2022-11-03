@@ -47,7 +47,7 @@ def refreshToken(user):
     db.session.commit()
 
 def stravaUpload(fileString, user):
-    refreshToken()
+    refreshToken(user)
     upload_endpoint = "https://www.strava.com/api/v3/uploads"
     body = { 'trainer': 'true', 'data_type': 'fit'}
     uri, headers, body = strava_client.add_token(upload_endpoint,
