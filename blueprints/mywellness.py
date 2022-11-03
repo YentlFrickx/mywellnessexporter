@@ -9,6 +9,8 @@ import pickle
 from flask_login import login_required, current_user
 from bs4 import BeautifulSoup
 
+from datetime import datetime
+
 import fitGenerator
 from blueprints.strava import stravaUpload
 # from models.activity import Activity
@@ -62,7 +64,8 @@ def sync_sessions(user):
     cookie_dict = {"_mwappseu": cookie_value}
 
     # TODO: use current date
-    url = 'https://www.mywellness.com/cloud/Training/LastPerformedWorkoutSession/?fromDate=30/10/2022&toDate=30/10/2022'
+    date_string = datetime.today().strftime('%d/%m/%Y')
+    url = f'https://www.mywellness.com/cloud/Training/LastPerformedWorkoutSession/?fromDate={date_string}&toDate={date_string}'
     response = requests.get(url=url, cookies=cookie_dict)
     soup = BeautifulSoup(response.text, "html.parser")
     sessions = soup.findAll('div', class_='single-item')
