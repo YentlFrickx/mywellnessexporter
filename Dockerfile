@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
-
-FROM tecktron/python-waitress:latest
+FROM python:3-alpine
+RUN pip install --upgrade pip
+RUN pip install waitress
 
 WORKDIR /app
 
