@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 
 from fit_tool.fit_file_builder import FitFileBuilder
 from fit_tool.profile.messages.activity_message import ActivityMessage
@@ -100,38 +100,12 @@ def convert(json_data):
     hr_index = 0
 
     sample_array = data["analitics"]["samples"]
-    hr_array = data["analitics"]["hr"]
 
-    while not ((sample_index >= len(sample_array) - 1) and (hr_index >= len(hr_array) - 1)):
-        if sample_index == len(sample_array):
-            sample_index -= 1
-        if hr_index == len(hr_array):
-            hr_index -= 1
-
-        sample = sample_array[sample_index]
-        sample_time = sample["t"]
-        hr = hr_array[hr_index]
-        hrTime = hr["t"]
-
-        if sample_time == hrTime or sample_time < hrTime:
-            current_dt = start_dt + timedelta(seconds=sample["t"])
-            message = create_message(sport, sample, 0)
-            message.heart_rate = hr["hr"]
-
-            sample_index += 1
-            if sample_time == hrTime:
-                hr_index += 1
-        else:
-            current_dt = start_dt + timedelta(seconds=hr["t"])
-            if sample_index > 0:
-                sample = sample_array[sample_index - 1]
-            message = create_message(sport, sample, hrTime - sample["t"])
-            message.heart_rate = hr["hr"]
-            hr_index += 1
-
-        message.timestamp = current_dt.timestamp() * 1000
-        end_dt = current_dt
-        records.append(message)
+    if 'hr' in data["analitics"]:
+        hr_array = data["analitics"]["hr"]
+        end_dt = hr_create_records(end_dt, hr_array, hr_index, records, sample_array, sample_index, sport, start_dt)
+    else:
+        end_dt = create_records(end_dt, records, sample_array, sample_index, sport, start_dt)
 
     builder.add_all(records)
     # stop event
@@ -177,6 +151,53 @@ def convert(json_data):
     filename = str(uuid.uuid4())
     fit_file.to_file(f'''${filename}.fit''')
     return FitActivity(f'''${filename}.fit''', True)
+
+
+def hr_create_records(end_dt, hr_array, hr_index, records, sample_array, sample_index, sport, start_dt):
+    while not ((sample_index >= len(sample_array) - 1) and (hr_index >= len(hr_array) - 1)):
+        if sample_index == len(sample_array):
+            sample_index -= 1
+        if hr_index == len(hr_array):
+            hr_index -= 1
+
+        sample = sample_array[sample_index]
+        sample_time = sample["t"]
+        hr = hr_array[hr_index]
+        hrTime = hr["t"]
+
+        if sample_time == hrTime or sample_time < hrTime:
+            current_dt = start_dt + timedelta(seconds=sample["t"])
+            message = create_message(sport, sample, 0)
+            message.heart_rate = hr["hr"]
+
+            sample_index += 1
+            if sample_time == hrTime:
+                hr_index += 1
+        else:
+            current_dt = start_dt + timedelta(seconds=hr["t"])
+            if sample_index > 0:
+                sample = sample_array[sample_index - 1]
+            message = create_message(sport, sample, hrTime - sample["t"])
+            message.heart_rate = hr["hr"]
+            hr_index += 1
+
+        message.timestamp = current_dt.timestamp() * 1000
+        end_dt = current_dt
+        records.append(message)
+    return end_dt
+
+def create_records(end_dt, records, sample_array, sample_index, sport, start_dt):
+    while sample_index < len(sample_array):
+        sample = sample_array[sample_index]
+        sample_time = sample["t"]
+        current_dt = start_dt + timedelta(seconds=sample_time)
+        message = create_message(sport, sample, 0)
+
+        message.timestamp = current_dt.timestamp() * 1000
+        end_dt = current_dt
+        records.append(message)
+        sample_index += 1
+    return end_dt
 
 
 if __name__ == '__main__':
